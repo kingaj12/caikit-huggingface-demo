@@ -19,7 +19,7 @@ import os
 import sys
 
 # Third Party
-from client.app import get_frontend
+import gradio_client
 import grpc
 
 # Local
@@ -34,6 +34,8 @@ CONFIG_PATH = os.path.realpath(
     os.path.join(os.path.dirname(__file__), "runtime", "config", "config.yml")
 )
 configure(CONFIG_PATH)
+
+
 
 
 def _get_module_models(model_manager=None) -> dict:
@@ -120,18 +122,25 @@ def _parse_args():
     return backend, frontend
 
 
-def start_frontend(backend, inference_service):
+def start_gradio_client(backend, inference_service):
+    # Get models to be shown on UI
     model_manager = ModelManager.get_instance() if backend else None
     module_models = _get_module_models(model_manager)
-    # Channel and stub is for client
+
+    # Open gRPC channel to server
     port = (
         get_config().runtime.port if not backend else backend.port
     )  # Using the actual port when we have a backend
-    target = f"localhost:{port}"
+    uri = get_config().runtime.uri
+    target = f"{uri}:{port}"
     channel = grpc.insecure_channel(target)
-    frontend = get_frontend(channel, inference_service, module_models)
+
+    # Launch gradio client
+    frontend = gradio_client.app.get_frontend(channel, inference_service, module_models)
     print(f"▶️  Starting the frontend gradio UI with using backend target={target}")
     frontend.launch(share=False, show_tips=False)
+
+    # This line reached when gradio client exits
     print("⏹️  Stopped")
 
 
@@ -150,7 +159,7 @@ def main() -> int:
             inference_service=inference_service, training_service=None
         ) as backend:
             if frontend:
-                start_frontend(backend, inference_service)  # and wait for termination
+                start_gradio_client(backend, inference_service)  # and wait for termination
             else:
                 # Block on backend when there is no waiting on frontend (in same process)
                 try:
@@ -162,7 +171,7 @@ def main() -> int:
                     )
 
     elif frontend:
-        start_frontend(backend, inference_service)
+        start_gradio_client(backend, inference_service)
 
     else:
         print(

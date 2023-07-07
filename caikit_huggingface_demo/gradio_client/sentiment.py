@@ -47,10 +47,12 @@ class Sentiment:
                     label="Input Text", placeholder=f"Enter input text for {tab}"
                 )
                 outputs = gr.Label(label=tab, num_top_classes=9)
-                inputs.change(this.fn, [model_choice, inputs], outputs, api_name=tab)
-                model_choice.change(
-                    this.fn, [model_choice, inputs], outputs, api_name=tab
-                )
+#                inputs.change(this.fn, [model_choice, inputs], outputs, api_name=tab)
+#                model_choice.change(
+#                    this.fn, [model_choice, inputs], outputs, api_name=tab
+#                )
+                btn = gr.Button("Run")
+                btn.click(this.fn, [model_choice, inputs], outputs, api_name=tab)
                 print(f"✅️  {tab} tab is enabled!")
                 return True
         except grpc.RpcError as rpc_error:
